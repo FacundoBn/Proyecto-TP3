@@ -1,37 +1,60 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../auth/state/auth_provider.dart';
+import '../../../core/widgets/app_scaffold.dart';
+import '../state/tickets_provider.dart';
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
-    final email = context.watch<AuthProvider>().email ?? '';
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Home'),
-        actions: [
-          if (email.isNotEmpty) Padding(padding: const EdgeInsets.only(right: 8), child: Center(child: Text(email, style: const TextStyle(fontSize: 12)))),
-          IconButton(
-            tooltip: 'Salir',
-            icon: const Icon(Icons.logout),
-            onPressed: () async { await context.read<AuthProvider>().logout(); if (context.mounted) context.go('/login'); },
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Selección de zona (placeholder en ajustes)'),
-          const SizedBox(height: 16),
-          Wrap(spacing: 12, runSpacing: 12, children: [
-            ElevatedButton.icon(onPressed: ()=>context.go('/scan'), icon: const Icon(Icons.qr_code_scanner), label: const Text('Escanear')),
-            OutlinedButton.icon(onPressed: ()=>context.go('/history'), icon: const Icon(Icons.history), label: const Text('Historial')),
-            FilledButton.icon(onPressed: ()=>context.go('/active'), icon: const Icon(Icons.timer), label: const Text('Estadía activa')),
-            OutlinedButton.icon(onPressed: ()=>context.go('/settings'), icon: const Icon(Icons.settings), label: const Text('Ajustes')),
-          ]),
-        ]),
-      ),
+    final ticketsProv = context.watch<TicketsProvider>();
+
+    return AppScaffold(
+      title: 'Home',
+      actions: [
+        IconButton(
+          tooltip: 'Actualizar',
+          onPressed: () => context.read<TicketsProvider>().load(),
+          icon: const Icon(Icons.refresh),
+        ),
+      ],
+      body: ticketsProv.loading
+          ? const Center(child: CircularProgressIndicator())
+          : ticketsProv.items.isEmpty
+              ? const Center(child: Text('No hay tickets'))
+              : ListView.separated(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: ticketsProv.items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (_, i) {
+                    final t = ticketsProv.items[i];
+                    final estado = t.activo ? 'Activo' : 'Finalizado';
+                    final color = t.activo ? Colors.orange : Colors.green;
+
+                    return Card(
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: color.withOpacity(.15),
+                          child: Icon(t.activo ? Icons.local_parking : Icons.receipt_long, color: color),
+                        ),
+                        title: Text('Patente: ${t.patente}'),
+                        subtitle: Text(
+                          'Ingreso: ${t.ingreso}'
+                          '\nEgreso: ${t.egreso ?? '-'}'
+                          '\nSlot: ${t.slotId}'
+                          '\nMonto: ${t.precioFinal ?? '-'}',
+                        ),
+                        isThreeLine: true,
+                        trailing: Chip(label: Text(estado)),
+                        onTap: () {
+                          // Más adelante: navegar al detalle del ticket
+                          // context.go('/receipt', extra: t);
+                        },
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }

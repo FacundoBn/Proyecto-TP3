@@ -1,12 +1,10 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
-// Auth/Home dentro de lib/data/...
 import '../../data/auth/view/login_screen.dart';
 import '../../data/auth/view/register_screen.dart';
 import '../../data/home/view/home_screen.dart';
 
-// Resto de pantallas (por ahora placeholders)
 import '../../features/scan/view/scan_screen.dart';
 import '../../features/active/view/active_session_screen.dart';
 import '../../features/summary/view/summary_screen.dart';
