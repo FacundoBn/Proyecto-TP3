@@ -13,7 +13,8 @@ class TicketsProvider extends ChangeNotifier {
   List<TicketView> get items => List.unmodifiable(_items);
 
   Future<void> load() async {
-    _loading = true; notifyListeners();
+    _loading = true;
+    notifyListeners();
 
     final tickets = await _conn.fetchCollection('tickets');
     final vehicles = await _conn.fetchCollection('vehicles');
@@ -35,6 +36,31 @@ class TicketsProvider extends ChangeNotifier {
     }).toList();
 
     _items.sort((a, b) => b.ingreso.compareTo(a.ingreso));
-    _loading = false; notifyListeners();
+    _loading = false;
+    notifyListeners();
+  }
+
+  TicketView? get active {
+    final activos = _items.where((t) => t.activo).toList()
+      ..sort((a, b) => b.ingreso.compareTo(a.ingreso));
+    return activos.isEmpty ? null : activos.first;
+  }
+
+  Future<void> closeActiveSession() async {
+    final current = active;
+    if (current == null) return;
+
+    final now = DateTime.now();
+
+
+    final updated = current.copyWith(
+      egreso: now,
+    );
+
+    final idx = _items.indexWhere((t) => t.id == current.id);
+    if (idx != -1) {
+      _items[idx] = updated;
+      notifyListeners();
+    }
   }
 }
