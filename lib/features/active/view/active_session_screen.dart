@@ -107,8 +107,34 @@ class ActiveSessionScreen extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: FilledButton.icon(
-                        onPressed: () {
-                          // ToDo
+                        onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Finalizar estadía'),
+                              content: const Text('¿Seguro que querés finalizar esta estadía?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Cancelar'),
+                                ),
+                                FilledButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Finalizar'),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirm == true) {
+                            await context.read<TicketsProvider>().closeActiveSession();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Estadía finalizada')),
+                              );
+                              context.go('/receipt');
+                            }
+                          }
                         },
                         icon: const Icon(Icons.exit_to_app),
                         label: const Text('Finalizar estadía'),
