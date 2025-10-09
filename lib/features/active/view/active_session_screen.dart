@@ -95,15 +95,6 @@ class ActiveSessionScreen extends StatelessWidget {
                 const Spacer(),
                 Row(
                   children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          context.go('/receipt', extra: t);
-                        },
-                        icon: const Icon(Icons.receipt_long),
-                        label: const Text('Ver comprobante'),
-                      ),
-                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: FilledButton.icon(
