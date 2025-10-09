@@ -130,7 +130,6 @@ class ActiveSessionScreen extends StatelessWidget {
                             final closed = await context.read<TicketsProvider>().closeActiveSession();
                             if (context.mounted && closed != null) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Estadía finalizada')),
                               );
                               context.go('/receipt', extra: closed);
