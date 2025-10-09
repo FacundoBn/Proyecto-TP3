@@ -46,9 +46,9 @@ class TicketsProvider extends ChangeNotifier {
     return activos.isEmpty ? null : activos.first;
   }
 
-  Future<void> closeActiveSession() async {
+  Future<TicketView?> closeActiveSession() async {
     final current = active;
-    if (current == null) return;
+    if (current == null) return null;
 
     final now = DateTime.now();
 
@@ -62,5 +62,6 @@ class TicketsProvider extends ChangeNotifier {
       _items[idx] = updated;
       notifyListeners();
     }
+    return updated;
   }
 }
