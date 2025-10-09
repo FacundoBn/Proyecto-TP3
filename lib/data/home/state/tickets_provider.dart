@@ -52,7 +52,6 @@ class TicketsProvider extends ChangeNotifier {
 
     final now = DateTime.now();
 
-
     final updated = current.copyWith(
       egreso: now,
     );
