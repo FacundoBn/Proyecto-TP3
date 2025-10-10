@@ -176,21 +176,6 @@ class _AppDrawer extends StatelessWidget {
             onTap: () => _goAndClose(context, '/scan'),
           ),
           ListTile(
-            leading: const Icon(Icons.timer),
-            title: const Text('Estadía activa'),
-            onTap: () => _goAndClose(context, '/active'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.summarize),
-            title: const Text('Resumen'),
-            onTap: () => _goAndClose(context, '/summary'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.receipt_long),
-            title: const Text('Comprobante'),
-            onTap: () => _goAndClose(context, '/receipt'),
-          ),
-          ListTile(
             leading: const Icon(Icons.history),
             title: const Text('Historial'),
             onTap: () => _goAndClose(context, '/history'),
