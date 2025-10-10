@@ -8,6 +8,7 @@ class TicketsProvider extends ChangeNotifier {
 
   bool _loading = false;
   List<TicketView> _items = [];
+  String? _activeId;
 
   bool get loading => _loading;
   List<TicketView> get items => List.unmodifiable(_items);
@@ -36,14 +37,35 @@ class TicketsProvider extends ChangeNotifier {
     }).toList();
 
     _items.sort((a, b) => b.ingreso.compareTo(a.ingreso));
+
+    if (_activeId != null && !_items.any((t) => t.id == _activeId)) {
+      _activeId = null;
+    }
+
     _loading = false;
     notifyListeners();
   }
 
   TicketView? get active {
+    if (_activeId != null) {
+      try {
+        return _items.firstWhere((t) => t.id == _activeId);
+      } catch (_) {
+      }
+    }
     final activos = _items.where((t) => t.activo).toList()
       ..sort((a, b) => b.ingreso.compareTo(a.ingreso));
     return activos.isEmpty ? null : activos.first;
+  }
+
+  void setActive(TicketView t) {
+    _activeId = t.id;
+    notifyListeners();
+  }
+
+  void clearActive() {
+    _activeId = null;
+    notifyListeners();
   }
 
   Future<TicketView?> closeActiveSession() async {
@@ -59,6 +81,9 @@ class TicketsProvider extends ChangeNotifier {
     final idx = _items.indexWhere((t) => t.id == current.id);
     if (idx != -1) {
       _items[idx] = updated;
+      if (_activeId == current.id) {
+        _activeId = null;
+      }
       notifyListeners();
     }
     return updated;
