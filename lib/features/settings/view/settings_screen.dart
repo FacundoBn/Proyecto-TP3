@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../data/home/state/tickets_provider.dart';
 import '../../../data/auth/state/profile_provider.dart';
+import '../../../data/auth/state/auth_provider.dart';
+
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -226,12 +229,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Cerrar sesión'),
-            onTap: () {
+            onTap: () async {
+              await context.read<AuthProvider>().logout();
+
+              if (!mounted) return;
+
+              context.go('/login');
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Sesión cerrada')),
               );
             },
           ),
+
         ],
       ),
     );
