@@ -11,6 +11,7 @@ import 'features/parking/state/parking_provider.dart';
 import 'services/storage_service.dart';
 
 import 'data/home/state/tickets_provider.dart';
+import 'data/auth/state/profile_provider.dart'; // ✅ import nuevo
 import 'infra/hardcode_connection.dart';
 
 void main() {
@@ -25,13 +26,18 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     final store = StorageService();
     final authRepo = AuthRepository();
+    final conn = HardcodeConnection();
 
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider(authRepo)..init()),
         ChangeNotifierProvider(create: (_) => PricingProvider(store)..init()),
-        ChangeNotifierProvider(create: (ctx) => ParkingProvider(store, ctx.read<PricingProvider>())..init()),
-        ChangeNotifierProvider(create: (_) => TicketsProvider(HardcodeConnection())..load()),
+        ChangeNotifierProvider(
+          create: (ctx) => ParkingProvider(store, ctx.read<PricingProvider>())..init(),
+        ),
+        ChangeNotifierProvider(create: (_) => TicketsProvider(conn)..load()),
+
+        ChangeNotifierProvider(create: (_) => ProfileProvider(conn)..load()),
       ],
       child: Builder(
         builder: (context) {
