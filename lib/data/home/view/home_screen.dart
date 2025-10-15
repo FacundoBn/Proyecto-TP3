@@ -50,11 +50,11 @@ class HomeScreen extends StatelessWidget {
               trailing: Chip(label: Text(t.activo ? 'Activo' : 'Cerrado')),
               onTap: () {
                 if (t.egreso == null) {
-                  // ⇢ ACTIVO: fijar foco y abrir “Estadía activa”
+                  // Activa: enfocarla y abrir “Estadía activa”
                   context.read<TicketsProvider>().setCurrentActive(t.id);
                   context.go('/active');
                 } else {
-                  // ⇢ CERRADO: ir a detalle (desde ahí podés ir al comprobante)
+                  // Cerrada: detalle (o recibo si preferís)
                   context.go('/ticket', extra: t);
                 }
               },

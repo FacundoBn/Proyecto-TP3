@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../data/home/state/tickets_provider.dart';
 import '../../../models/ticket.dart';
-import '../../../utils/format.dart';
 
 class ActiveSessionScreen extends StatefulWidget {
   const ActiveSessionScreen({super.key});
@@ -70,11 +70,11 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                   const Spacer(),
                   FilledButton.icon(
                     onPressed: () {
-                      prov.finishSession(t.id, ratePerHour: 100);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Estadía finalizada')),
-                        );
+                      // Cierra y obtiene el ticket actualizado
+                      final updated = prov.finishSession(t.id, ratePerHour: 100);
+                      if (updated != null && context.mounted) {
+                        // Redirige al detalle del ticket ya cerrado
+                        context.go('/ticket', extra: updated);
                       }
                     },
                     icon: const Icon(Icons.stop_circle_outlined),

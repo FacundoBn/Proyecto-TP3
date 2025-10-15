@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
+
 import '../../../domain/repositories/i_connection.dart';
 import '../../../models/ticket.dart';
 import '../../../models/vehicle.dart';
+import '../../../utils/plate.dart';
 
 class TicketsProvider extends ChangeNotifier {
   final IConnection _conn;
@@ -28,6 +30,18 @@ class TicketsProvider extends ChangeNotifier {
   TicketView? getById(String id) {
     final i = _items.indexWhere((t) => t.id == id);
     return i >= 0 ? _items[i] : null;
+  }
+
+  /// Busca un activo por patente (normalizada)
+  TicketView? findActiveByPlate(String plate) {
+    final p = PlateValidator.normalize(plate);
+    try {
+      return _items.firstWhere(
+        (t) => t.egreso == null && PlateValidator.normalize(t.patente) == p,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> load() async {
@@ -58,25 +72,37 @@ class TicketsProvider extends ChangeNotifier {
     _loading = false; notifyListeners();
   }
 
-  /// ⇢ NUEVO: seleccionar qué ticket activo queda “en foco”
+  /// Selecciona qué ticket activo queda “en foco”
   void setCurrentActive(String id) {
     _currentActiveId = id;
     notifyListeners();
   }
 
-  /// Crear estadía activa en memoria
+  /// Inicia una estadía activa. Si la patente YA está activa, NO crea otra:
+  /// enfoca la existente y la devuelve.
   TicketView startSession({
     required String plate,
     String slotId = 'S1',
     String userId = 'u1',
     String? guestId,
   }) {
+    final norm = PlateValidator.normalize(plate);
+
+    // 1) si ya hay un activo con esa patente → enfocarlo y devolverlo
+    final existing = findActiveByPlate(norm);
+    if (existing != null) {
+      _currentActiveId = existing.id;
+      notifyListeners();
+      return existing;
+    }
+
+    // 2) si no hay → crear uno nuevo
     final now = DateTime.now().toUtc();
     final id = const Uuid().v4();
 
     final ticket = TicketView(
       id: id,
-      patente: plate.toUpperCase(),
+      patente: norm.toUpperCase(),
       slotId: slotId,
       ingreso: now,
       egreso: null,
@@ -91,22 +117,24 @@ class TicketsProvider extends ChangeNotifier {
     return ticket;
   }
 
-  /// Finalizar y calcular monto simple
-  void finishSession(String ticketId, {num ratePerHour = 100}) {
+  /// Finaliza una estadía activa, calcula monto simple y devuelve el ticket actualizado
+  TicketView? finishSession(String ticketId, {num ratePerHour = 100}) {
     final idx = _items.indexWhere((t) => t.id == ticketId);
-    if (idx < 0) return;
+    if (idx < 0) return null;
 
     final now = DateTime.now().toUtc();
     final t = _items[idx];
-    if (t.egreso != null) return;
+    if (t.egreso != null) return _items[idx]; // ya estaba cerrado
 
     final minutes = now.difference(t.ingreso).inMinutes.clamp(1, 1000000);
     final amount = (ratePerHour / 60.0) * minutes;
 
-    _items[idx] = t.copyWith(egreso: now, precioFinal: amount);
+    final updated = t.copyWith(egreso: now, precioFinal: amount);
+    _items[idx] = updated;
 
     if (_currentActiveId == ticketId) _currentActiveId = null;
     notifyListeners();
+    return updated;
   }
 
   // ── Gestión de vehículos (para Settings) ─────────────────────
@@ -120,7 +148,7 @@ class TicketsProvider extends ChangeNotifier {
   Future<void> renameVehicle({required String id, required String newPatente}) async {
     final idx = _vehicles.indexWhere((v) => v.id == id);
     if (idx < 0) return;
-    _vehicles[idx] = _vehicles[idx].copyWith(numero: newPatente.toUpperCase());
+    _vehicles[idx] = _vehicles[idx].copyWith(numero: PlateValidator.normalize(newPatente));
     notifyListeners();
     await _conn.saveCollection('vehicles', _vehicles.map((e) => e.toMap()).toList());
   }
