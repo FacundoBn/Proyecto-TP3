@@ -37,28 +37,25 @@ class HomeScreen extends StatelessWidget {
             child: ListTile(
               leading: CircleAvatar(
                 backgroundColor: color.withOpacity(.15),
-                child: Icon(
-                  t.activo ? Icons.local_parking : Icons.receipt_long,
-                  color: color,
-                ),
+                child: Icon(t.activo ? Icons.local_parking : Icons.receipt_long, color: color),
               ),
               title: Text('Patente: ${t.patente}'),
               subtitle: Text(
-                'Ingreso: ${t.ingreso}'
-                    '\nEgreso: ${t.egreso ?? '-'}'
-                    '\nSlot: ${t.slotId}'
-                    '\nMonto: ${t.precioFinal ?? '-'}',
+                'Ingreso: ${t.ingreso.toLocal()}'
+                '\nEgreso: ${t.egreso?.toLocal() ?? '-'}'
+                '\nSlot: ${t.slotId}'
+                '\nMonto: ${t.precioFinal ?? '-'}',
               ),
               isThreeLine: true,
-              trailing: Chip(label: Text(estado)),
+              trailing: Chip(label: Text(t.activo ? 'Activo' : 'Cerrado')),
               onTap: () {
-                final prov = context.read<TicketsProvider>();
-
-                if (t.activo) {
-                  prov.setActive(t);
+                if (t.egreso == null) {
+                  // ⇢ ACTIVO: fijar foco y abrir “Estadía activa”
+                  context.read<TicketsProvider>().setCurrentActive(t.id);
                   context.go('/active');
                 } else {
-                  context.go('/receipt', extra: t);
+                  // ⇢ CERRADO: ir a detalle (desde ahí podés ir al comprobante)
+                  context.go('/ticket', extra: t);
                 }
               },
             ),

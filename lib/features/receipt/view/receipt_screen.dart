@@ -1,77 +1,57 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../models/ticket.dart';
 
 class ReceiptScreen extends StatelessWidget {
-  const ReceiptScreen({super.key});
+  final TicketView ticket;
+  const ReceiptScreen({super.key, required this.ticket});
+
+  String _payload() {
+    return '{"id":"${ticket.id}","patente":"${ticket.patente}","monto":${ticket.precioFinal ?? 0},"estado":"${ticket.egreso == null ? 'abierto' : 'cerrado'}"}';
+    // esto es demo; después lo podés firmar/hashear
+  }
 
   @override
   Widget build(BuildContext context) {
-    final t = GoRouterState.of(context).extra as TicketView?;
-
-    if (t == null) {
-      return const AppScaffold(
-        title: 'Comprobante',
-        body: Center(child: Text('No se encontró el comprobante')),
-      );
-    }
-
-    final dur = (t.egreso ?? DateTime.now()).difference(t.ingreso);
-    final hh = dur.inHours.toString().padLeft(2, '0');
-    final mm = (dur.inMinutes % 60).toString().padLeft(2, '0');
-
     return AppScaffold(
       title: 'Comprobante',
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Card(
-          elevation: 3,
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Text(
-                    'Comprobante de Estacionamiento',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                _infoRow('Patente:', t.patente),
-                _infoRow('Slot:', t.slotId),
-                _infoRow('Ingreso:', t.ingreso.toString()),
-                _infoRow('Egreso:', t.egreso?.toString() ?? '-'),
-                _infoRow('Duración:', '$hh h $mm min'),
-                _infoRow('Monto final:', t.precioFinal != null ? '\$${t.precioFinal}' : '-'),
-                const Spacer(),
-                Center(
-                  child: FilledButton.icon(
-                    onPressed: () => context.go('/Home'),
-                    icon: const Icon(Icons.home),
-                    label: const Text('Volver al inicio'),
-                  ),
-                ),
-              ],
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Text('Ticket #${ticket.id}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  Text(ticket.egreso == null ? 'Estado: Abierto' : 'Estado: Cerrado'),
+                  const SizedBox(height: 12),
+                  QrImageView(data: _payload(), version: QrVersions.auto, size: 220),
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  _row('Patente', ticket.patente),
+                  _row('Slot', ticket.slotId),
+                  _row('Ingreso', ticket.ingreso.toLocal().toString()),
+                  _row('Egreso', ticket.egreso?.toLocal().toString() ?? '-'),
+                  _row('Total', ticket.precioFinal?.toStringAsFixed(2) ?? '-'),
+                ],
+              ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _infoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-          Flexible(child: Text(value, textAlign: TextAlign.right)),
         ],
       ),
     );
   }
+
+  Widget _row(String k, String v) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            SizedBox(width: 100, child: Text(k, style: const TextStyle(fontWeight: FontWeight.w600))),
+            Expanded(child: Text(v)),
+          ],
+        ),
+      );
 }

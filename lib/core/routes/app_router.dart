@@ -11,8 +11,10 @@ import '../../features/summary/view/summary_screen.dart';
 import '../../features/receipt/view/receipt_screen.dart';
 import '../../features/history/view/history_screen.dart';
 import '../../features/settings/view/settings_screen.dart';
+import '../../features/tickets/view/ticket_detail_screen.dart';
 
 import '../../data/auth/state/auth_provider.dart';
+import '../../models/ticket.dart';
 
 class AppRouter {
   static GoRouter build(AuthProvider auth) {
@@ -34,9 +36,25 @@ class AppRouter {
         GoRoute(path: '/scan', pageBuilder: (c, s) => const NoTransitionPage(child: ScanScreen())),
         GoRoute(path: '/active', pageBuilder: (c, s) => const NoTransitionPage(child: ActiveSessionScreen())),
         GoRoute(path: '/summary', pageBuilder: (c, s) => const NoTransitionPage(child: SummaryScreen())),
-        GoRoute(path: '/receipt', pageBuilder: (c, s) => const NoTransitionPage(child: ReceiptScreen())),
         GoRoute(path: '/history', pageBuilder: (c, s) => const NoTransitionPage(child: HistoryScreen())),
         GoRoute(path: '/settings', pageBuilder: (c, s) => const NoTransitionPage(child: SettingsScreen())),
+
+        // Detalle de ticket (recibe TicketView por extra)
+        GoRoute(
+          path: '/ticket',
+          pageBuilder: (c, s) {
+            final ticket = s.extra as TicketView;
+            return NoTransitionPage(child: TicketDetailScreen(ticket: ticket));
+          },
+        ),
+        // Comprobante (recibe TicketView por extra)
+        GoRoute(
+          path: '/receipt',
+          pageBuilder: (c, s) {
+            final ticket = s.extra as TicketView;
+            return NoTransitionPage(child: ReceiptScreen(ticket: ticket));
+          },
+        ),
       ],
     );
   }

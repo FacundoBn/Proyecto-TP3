@@ -1,199 +1,113 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
+import '../../../core/widgets/app_scaffold.dart';
 import '../../../data/home/state/tickets_provider.dart';
+import '../../../models/ticket.dart';
+import '../../../utils/format.dart';
 
-class ActiveSessionScreen extends StatelessWidget {
+class ActiveSessionScreen extends StatefulWidget {
   const ActiveSessionScreen({super.key});
+
+  @override
+  State<ActiveSessionScreen> createState() => _ActiveSessionScreenState();
+}
+
+class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
+  Timer? _ticker;
+  Duration _elapsed = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTicker();
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  void _startTicker() {
+    _ticker?.cancel();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      final t = context.read<TicketsProvider>().currentActive;
+      if (t == null) return;
+      final now = DateTime.now().toUtc();
+      setState(() {
+        _elapsed = now.difference(t.ingreso);
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<TicketsProvider>();
+    final TicketView? t = prov.currentActive;
 
-    if (prov.loading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Estadía activa')),
-        body: const Center(child: CircularProgressIndicator()),
-        drawer: const _AppDrawer(),
-      );
-    }
-
-    final t = prov.active;
-    if (t == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Estadía activa')),
-        body: const Center(child: Text('No tenés una estadía activa')),
-        drawer: const _AppDrawer(),
-      );
-    }
-
-    return Scaffold(
-      drawer: const _AppDrawer(),
-      appBar: AppBar(
-        title: const Text('Estadía activa'),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Actualizar',
-            onPressed: () => context.read<TicketsProvider>().load(),
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.orange.withOpacity(.15),
-                      child: const Icon(Icons.local_parking, color: Colors.orange),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Patente: ${t.patente}',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const Spacer(),
-                    const Chip(label: Text('Activo')),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text('Ingreso: ${t.ingreso}'),
-                Text('Slot: ${t.slotId}'),
-                const SizedBox(height: 12),
-
-                StreamBuilder<DateTime>(
-                  stream: Stream<DateTime>.periodic(
-                    const Duration(seconds: 1),
-                        (_) => DateTime.now(),
-                  ),
-                  initialData: DateTime.now(),
-                  builder: (_, snapshot) {
-                    final now = snapshot.data ?? DateTime.now();
-                    final diff = now.difference(t.ingreso);
-                    final hh = diff.inHours.toString().padLeft(2, '0');
-                    final mm = (diff.inMinutes % 60).toString().padLeft(2, '0');
-                    final ss = (diff.inSeconds % 60).toString().padLeft(2, '0');
-                    return Text(
-                      'Tiempo transcurrido: $hh:$mm:$ss',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    );
-                  },
-                ),
-
-                const Spacer(),
-                Row(
-                  children: [
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: () async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Finalizar estadía'),
-                              content: const Text('¿Seguro que querés finalizar esta estadía?'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text('Cancelar'),
-                                ),
-                                FilledButton(
-                                  onPressed: () => Navigator.pop(ctx, true),
-                                  child: const Text('Finalizar'),
-                                ),
-                              ],
-                            ),
-                          );
-
-                          if (confirm == true) {
-                            final closed = await context.read<TicketsProvider>().closeActiveSession();
-                            if (context.mounted && closed != null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Estadía finalizada')),
-                              );
-                              context.go('/receipt', extra: closed);
-                            }
-                          }
-                        },
-                        icon: const Icon(Icons.exit_to_app),
-                        label: const Text('Finalizar estadía'),
+    return AppScaffold(
+      title: 'Estadía activa',
+      body: t == null
+          ? const Center(child: Text('No hay ninguna estadía activa.'))
+          : Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Card(
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.orange.withOpacity(.15),
+                        child: const Icon(Icons.local_parking, color: Colors.orange),
                       ),
+                      title: Text('Patente: ${t.patente}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Text('Inicio: ${t.ingreso.toLocal()} • Slot: ${t.slotId}'),
+                      trailing: const Chip(label: Text('Activo')),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 8),
+                  _ElapsedBox(elapsed: _elapsed),
+                  const Spacer(),
+                  FilledButton.icon(
+                    onPressed: () {
+                      prov.finishSession(t.id, ratePerHour: 100);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Estadía finalizada')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.stop_circle_outlined),
+                    label: const Text('Finalizar'),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }
 
-class _AppDrawer extends StatelessWidget {
-  const _AppDrawer();
-
-  void _goAndClose(BuildContext context, String path) {
-    Navigator.of(context).pop();
-    context.go(path);
-  }
+class _ElapsedBox extends StatelessWidget {
+  final Duration elapsed;
+  const _ElapsedBox({required this.elapsed});
 
   @override
   Widget build(BuildContext context) {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          const UserAccountsDrawerHeader(
-            accountName: Text('Sesión iniciada'),
-            accountEmail: Text('admin@demo.com'),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, size: 40, color: Colors.indigo),
-            ),
-            decoration: BoxDecoration(color: Color(0xFF3F51B5)),
-          ),
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Home'),
-            onTap: () => _goAndClose(context, '/Home'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.qr_code_scanner),
-            title: const Text('Escanear'),
-            onTap: () => _goAndClose(context, '/scan'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.history),
-            title: const Text('Historial'),
-            onTap: () => _goAndClose(context, '/history'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.settings),
-            title: const Text('Ajustes'),
-            onTap: () => _goAndClose(context, '/settings'),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.exit_to_app),
-            title: const Text('Salir'),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-        ],
+    String two(int n) => n.toString().padLeft(2, '0');
+    final h = two(elapsed.inHours);
+    final m = two(elapsed.inMinutes.remainder(60));
+    final s = two(elapsed.inSeconds.remainder(60));
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            const Text('Tiempo transcurrido', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 6),
+            Text('$h:$m:$s', style: Theme.of(context).textTheme.displaySmall),
+          ],
+        ),
       ),
     );
   }
