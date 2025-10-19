@@ -1,10 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
-
 import '../../data/auth/view/login_screen.dart';
 import '../../data/auth/view/register_screen.dart';
 import '../../data/home/view/home_screen.dart';
-
 import '../../features/scan/view/scan_screen.dart';
 import '../../features/active/view/active_session_screen.dart';
 import '../../features/summary/view/summary_screen.dart';
@@ -12,7 +10,7 @@ import '../../features/receipt/view/receipt_screen.dart';
 import '../../features/history/view/history_screen.dart';
 import '../../features/settings/view/settings_screen.dart';
 import '../../features/tickets/view/ticket_detail_screen.dart';
-
+import '../../features/history/view/vehicle_history_screen.dart';
 import '../../data/auth/state/auth_provider.dart';
 import '../../models/ticket.dart';
 
@@ -38,6 +36,11 @@ class AppRouter {
         GoRoute(path: '/summary', pageBuilder: (c, s) => const NoTransitionPage(child: SummaryScreen())),
         GoRoute(path: '/history', pageBuilder: (c, s) => const NoTransitionPage(child: HistoryScreen())),
         GoRoute(path: '/settings', pageBuilder: (c, s) => const NoTransitionPage(child: SettingsScreen())),
+        GoRoute(path: '/history/:plate', pageBuilder: (c, s) {
+            final plate = s.pathParameters['plate']!;
+            return NoTransitionPage(child: VehicleHistoryScreen(plate: plate));
+          },
+        ),
 
         // Detalle de ticket (recibe TicketView por extra)
         GoRoute(
